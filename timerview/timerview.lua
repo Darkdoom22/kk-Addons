@@ -216,7 +216,7 @@ end
 kkAddon["present"] = function()
     CImGui.SetNextWindowPos(ImVec2.new(25, 300))
     CImGui.SetNextWindowBgAlpha(0.5)
-    if(CImGui.Begin("##TimerView", nil, bit.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoBackground)))then --TODO: no title bar
+    if(CImGui.Begin("##TimerView", nil, bit.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoBackground)))then
         TimerView:DrawJobAbilityTimers()
         CImGui.SameLine()
         TimerView:DrawSpellTimers()
