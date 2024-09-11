@@ -14,6 +14,9 @@ local TimerView = {
     ["InitialSpellDuration"] = {},
 
     ["LastManeuver"] = 0,
+    
+    ["BuffData"] = T{},
+
     ["Settings"] = T{
         --TODO: settings
     }
@@ -132,7 +135,7 @@ function TimerView:GetSpellDurationPercent(spellId, recastTime)
     local percent = 0
 
     if(self["InitialSpellDuration"][spellId] ~= nil and self["InitialSpellDuration"][spellId] ~= 0)then
-        percent = recastTime / self["InitialSpellDuration"][i]
+        percent = recastTime / self["InitialSpellDuration"][spellId]
         percent = math.min(1, math.max(0, 1 - percent))
     end
 
@@ -141,7 +144,7 @@ end
 
 function TimerView:DrawJobAbilityTimers()
     CImGui.BeginGroup()
-    if(CImGui.BeginChild("##AbilityTimerViewChild", ImVec2.new(235, 0), true))then
+    if(CImGui.BeginChild("##AbilityTimerViewChild", ImVec2.new(235, 0), false))then
         local jobAbilities = GameManager:GetCombatManager():GetJobAbilities()
         local resourceManager = GameManager:GetResourceManager()
         local recastManager = GameManager:GetRecastManager()
@@ -151,12 +154,11 @@ function TimerView:DrawJobAbilityTimers()
             local abilityName = resourceManager:JobAbilityIdToName(jobAbilities[i].No)
             local recastTime, currentCharges = recastManager:GetAbilityRecastTime(jobAbilities[i].No)
 
-            local timeStr = GetTimeStr(recastTime)
-
             if(self["InitialAbilityDuration"][jobAbilities[i].No] == nil and recastTime ~= 0)then
                 self["InitialAbilityDuration"][jobAbilities[i].No] = recastTime
             end
 
+            local timeStr = GetTimeStr(recastTime)
             local percent = self:GetAbilityDurationPercent(jobAbilities[i].No, recastTime)
 
             if(not StratagemAbilities:Contains(abilityName) and not PetAbilities:Contains(abilityName))then
@@ -185,7 +187,7 @@ end
 
 function TimerView:DrawSpellTimers()
     CImGui.BeginGroup()
-    if(CImGui.BeginChild("##SpellTimerViewChild", ImVec2.new(235, 0), true))then
+    if(CImGui.BeginChild("##SpellTimerViewChild", ImVec2.new(235, 0), false))then
         local resourceManager = GameManager:GetResourceManager()
         local recastManager = GameManager:GetRecastManager()
 
@@ -198,7 +200,6 @@ function TimerView:DrawSpellTimers()
             end
 
             local timeStr = GetTimeStr(recast)
-
             local percent = self:GetSpellDurationPercent(i, recast)
 
             if(recast == 0)then
@@ -215,7 +216,7 @@ end
 kkAddon["present"] = function()
     CImGui.SetNextWindowPos(ImVec2.new(25, 300))
     CImGui.SetNextWindowBgAlpha(0.5)
-    if(CImGui.Begin("##TimerView"))then --TODO: no title bar
+    if(CImGui.Begin("##TimerView", nil, bit.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoBackground)))then --TODO: no title bar
         TimerView:DrawJobAbilityTimers()
         CImGui.SameLine()
         TimerView:DrawSpellTimers()
