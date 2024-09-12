@@ -5,27 +5,25 @@ kkAddon["version"] = "0.0.2"
 kkAddon["author"] = "Uwu/Darkdoom"
 kkAddon["command"] = "tv"
 
-package.loaded["Settings"] = nil
-package.loaded["Tables"] = nil
-
-local ffi = require("ffi")
-
 require("Tables")
 
 local Settings = require("Settings")
 
 local TimerView = {
-    ["MainWinOpen"] = true,
-
+    ["EditorWinOpen"] = false,
     ["InitialAbilityDuration"] = {},
     ["InitialSpellDuration"] = {},
 
     ["LastManeuver"] = 0,
-    
+
     ["BuffData"] = T{},
 
+    --defaults
     ["Settings"] = T{
-        ["DrawBackground"] = false
+        ["DrawBackground"] = false, --draw background behind for progress bars and icons
+        ["BackgroundAlpha"] = 0.5, --opacity for background window
+        ["XPosition"] = 25,
+        ["YPosition"] = 300
     }
 }
 
@@ -76,6 +74,12 @@ kkAddon["load"] = function()
 
     Settings:TryCreateAddonSettingsDirectory("timerview")
     TimerView["Settings"] = Settings:GetAddonSettingsTable("timerview", "testSettings")
+end
+
+kkAddon["addon command"] = function(args)
+    if(args[2]:lower() == "settings")then
+        TimerView["EditorWinOpen"] = not TimerView["EditorWinOpen"]
+    end
 end
 
 kkAddon["incoming packet"] = function(packet)
@@ -223,25 +227,33 @@ function TimerView:DrawSpellTimers()
     CImGui.EndGroup()
 end
 
+function TimerView:DrawSettingsEditor()
+    local oldSettings = self["Settings"]:DeepCopy()
+
+    self["Settings"]["DrawBackground"] = CImGui.Checkbox("Draw Background", self["Settings"]["DrawBackground"])
+    self["Settings"]["BackgroundAlpha"] = CImGui.InputFloat("Background Opacity", self["Settings"]["BackgroundAlpha"])
+    self["Settings"]["XPosition"] = CImGui.DragInt("X Position", self["Settings"]["XPosition"])
+    self["Settings"]["YPosition"] = CImGui.DragInt("Y Position", self["Settings"]["YPosition"])
+
+    Settings:CompareAndSaveAddonSettingsFile("timerview", "testSettings", oldSettings, self["Settings"])
+end
+
 kkAddon["present"] = function()
-    CImGui.SetNextWindowPos(ImVec2.new(25, 300))
-    CImGui.SetNextWindowBgAlpha(0.5)
-    if(CImGui.Begin("##TimerView", nil, bit.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoBackground)))then --TODO: no title bar
+    CImGui.SetNextWindowPos(ImVec2.new(TimerView["Settings"]["XPosition"], TimerView["Settings"]["YPosition"]))
+    CImGui.SetNextWindowBgAlpha(TimerView["Settings"]["BackgroundAlpha"])
+    local windowFlags = TimerView["Settings"]["DrawBackground"] and ImGuiWindowFlags.NoTitleBar or bit.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoBackground)
+    if(CImGui.Begin("##TimerView", true, windowFlags))then
         TimerView:DrawJobAbilityTimers()
         CImGui.SameLine()
         TimerView:DrawSpellTimers()
         CImGui.End()
     end
 
-    if(CImGui.Begin("TimerView Settings"))then
-        local newValue = CImGui.Checkbox("Draw Background", TimerView["Settings"]["DrawBackground"])
-        if(newValue ~= TimerView["Settings"]["DrawBackground"])then
-            TimerView["Settings"]["DrawBackground"] = newValue
-            Settings:SaveAddonSettingsFile("timerview", "testSettings", TimerView["Settings"]:Serialize())
-        end
+    --TODO: st
+    if(CImGui.Begin("TimerView Settings", TimerView["EditorWinOpen"]))then
+        TimerView:DrawSettingsEditor()
         CImGui.End()
     end
-    --TODO: settings editor window
 end
 
 return kkAddon
