@@ -5,7 +5,14 @@ kkAddon["version"] = "0.0.2"
 kkAddon["author"] = "Uwu/Darkdoom"
 kkAddon["command"] = "tv"
 
+package.loaded["Settings"] = nil
+package.loaded["Tables"] = nil
+
+local ffi = require("ffi")
+
 require("Tables")
+
+local Settings = require("Settings")
 
 local TimerView = {
     ["MainWinOpen"] = true,
@@ -18,7 +25,7 @@ local TimerView = {
     ["BuffData"] = T{},
 
     ["Settings"] = T{
-        --TODO: settings
+        ["DrawBackground"] = false
     }
 }
 
@@ -66,6 +73,9 @@ kkAddon["load"] = function()
             PetAbilities:Insert(petAbilityName)
         end
     end
+
+    Settings:TryCreateAddonSettingsDirectory("timerview")
+    TimerView["Settings"] = Settings:GetAddonSettingsTable("timerview", "testSettings")
 end
 
 kkAddon["incoming packet"] = function(packet)
@@ -216,13 +226,21 @@ end
 kkAddon["present"] = function()
     CImGui.SetNextWindowPos(ImVec2.new(25, 300))
     CImGui.SetNextWindowBgAlpha(0.5)
-    if(CImGui.Begin("##TimerView", nil, bit.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoBackground)))then
+    if(CImGui.Begin("##TimerView", nil, bit.bor(ImGuiWindowFlags.NoTitleBar, ImGuiWindowFlags.NoBackground)))then --TODO: no title bar
         TimerView:DrawJobAbilityTimers()
         CImGui.SameLine()
         TimerView:DrawSpellTimers()
         CImGui.End()
     end
 
+    if(CImGui.Begin("TimerView Settings"))then
+        local newValue = CImGui.Checkbox("Draw Background", TimerView["Settings"]["DrawBackground"])
+        if(newValue ~= TimerView["Settings"]["DrawBackground"])then
+            TimerView["Settings"]["DrawBackground"] = newValue
+            Settings:SaveAddonSettingsFile("timerview", "testSettings", TimerView["Settings"]:Serialize())
+        end
+        CImGui.End()
+    end
     --TODO: settings editor window
 end
 
